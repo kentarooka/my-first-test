@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自己紹介</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 100%;
+      padding: 48px 40px;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c63ff, #48c6ef);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section h2 {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6c63ff;
+      margin-bottom: 8px;
+      border-bottom: 2px solid #ede9ff;
+      padding-bottom: 4px;
+    }
+
+    .section p {
+      line-height: 1.8;
+      font-size: 0.95rem;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      background: #ede9ff;
+      color: #6c63ff;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+    }
+
+    .links {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .links a {
+      text-decoration: none;
+      color: #6c63ff;
+      font-size: 0.9rem;
+      border: 1px solid #6c63ff;
+      border-radius: 6px;
+      padding: 8px 20px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .links a:hover {
+      background: #6c63ff;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="avatar">👤</div>
+
+    <h1>山田 太郎</h1>
+    <p class="subtitle">ソフトウェアエンジニア</p>
+
+    <div class="section">
+      <h2>自己紹介</h2>
+      <p>
+        はじめまして。山田太郎と申します。<br>
+        Web アプリケーション開発を中心に、フロントエンドからバックエンドまで幅広く取り組んでいます。
+        新しい技術を学ぶことが好きで、日々スキルアップに励んでいます。
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>スキル</h2>
+      <div class="tags">
+        <span class="tag">HTML / CSS</span>
+        <span class="tag">JavaScript</span>
+        <span class="tag">TypeScript</span>
+        <span class="tag">React</span>
+        <span class="tag">Node.js</span>
+        <span class="tag">Python</span>
+        <span class="tag">Git</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>趣味</h2>
+      <p>読書 / 登山 / カフェ巡り</p>
+    </div>
+
+    <div class="links">
+      <a href="https://github.com/">GitHub</a>
+      <a href="mailto:example@example.com">メール</a>
+    </div>
+  </div>
+</body>
+</html>
