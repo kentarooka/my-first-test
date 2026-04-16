@@ -4,21 +4,21 @@
 - 規約に基づいて保護者からの問い合わせに自動対応
 - 個別判断が必要な場合は塾長にエスカレーション
 - Flask + Claude API で構築
+- APIキー未設定時はデモモードで動作
 """
 
 import os
-import json
+import re
 from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, render_template, request, jsonify
-from anthropic import Anthropic
 
 app = Flask(__name__)
 
 # --- 設定 ---
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = "claude-sonnet-4-20250514"
+DEMO_MODE = not os.environ.get("ANTHROPIC_API_KEY")
 
 # --- 規約・FAQの読み込み ---
 BASE_DIR = Path(__file__).parent
@@ -83,6 +83,134 @@ SYSTEM_PROMPT = f"""あなたは「さくら学習塾」の保護者対応AIア�
 - エスカレーション時は「塾長の○○に確認のうえ、改めてご連絡いたします」と伝える
 """
 
+# --- デモモード用の定型応答 ---
+DEMO_RESPONSES = {
+    "振替": {
+        "response": (
+            "ご連絡ありがとうございます。\n\n"
+            "授業の振替についてご案内いたします。\n\n"
+            "規約第2条に基づき、以下のルールとなっております。\n\n"
+            "・振替は月2回まで可能です\n"
+            "・授業日の前日18:00までにご連絡ください\n"
+            "・当日のご連絡の場合は振替不可となります\n"
+            "・欠席日から1ヶ月以内に振替を実施してください\n\n"
+            "振替先の曜日・時間は空き状況に応じてご案内いたします。"
+            "ご希望の日時がございましたらお知らせください。"
+        ),
+        "escalated": False
+    },
+    "授業料|費用|料金|いくら|月謝": {
+        "response": (
+            "お問い合わせありがとうございます。\n\n"
+            "規約第1条に基づき、月額授業料は以下のとおりです。\n\n"
+            "【小学生コース】\n"
+            "・週1回：月額 12,000円\n"
+            "・週2回：月額 20,000円\n\n"
+            "【中学生コース】\n"
+            "・週1回：月額 18,000円\n"
+            "・週2回：月額 30,000円\n"
+            "・週3回：月額 40,000円\n\n"
+            "【高校生コース】\n"
+            "・週1回：月額 22,000円\n"
+            "・週2回：月額 38,000円\n\n"
+            "入塾金は15,000円です（兄弟姉妹の2人目以降は免除）。\n"
+            "教材費は半期ごとに5,000円〜10,000円を別途いただいております。"
+        ),
+        "escalated": False
+    },
+    "退塾|やめたい|退会": {
+        "response": (
+            "ご連絡いただきありがとうございます。\n\n"
+            "退塾の手続きについてご案内いたします。\n\n"
+            "規約第3条に基づき、退塾をご希望の場合は、退塾希望月の前月15日までに「退塾届」をご提出ください。\n\n"
+            "例：3月末で退塾をご希望の場合 → 2月15日までにご提出\n\n"
+            "期日を過ぎた場合は、翌月分の授業料が発生いたしますのでご注意ください。\n\n"
+            "退塾届は塾の受付にてお渡ししております。"
+        ),
+        "escalated": False
+    },
+    "休塾|休み|休ませたい": {
+        "response": (
+            "ご連絡ありがとうございます。\n\n"
+            "休塾についてご案内いたします。\n\n"
+            "規約第3条に基づき、休塾をご希望の場合は以下の手続きとなります。\n\n"
+            "・休塾届をご提出ください\n"
+            "・休塾期間中は月額3,000円の在籍維持費がかかります\n"
+            "・休塾期間は最長3ヶ月です\n"
+            "・3ヶ月を超える場合は一度退塾の扱いとなります\n"
+            "・復帰時に入塾金は不要です\n\n"
+            "休塾届は塾の受付にてお渡ししております。"
+        ),
+        "escalated": False
+    },
+    "補習|追加.*授業|特別": {
+        "response": (
+            "お問い合わせありがとうございます。\n\n"
+            "追加授業・補習についてご案内いたします。\n\n"
+            "規約第5条に基づき、定期テスト前の特別補習は塾の判断で無料実施する場合がございます（任意参加）。\n\n"
+            "通常授業以外の追加授業をご希望の場合は、以下の追加料金が発生いたします。\n\n"
+            "・小学生：1コマ 3,000円\n"
+            "・中学生：1コマ 4,000円\n"
+            "・高校生：1コマ 5,000円\n\n"
+            "なお、講師の空き状況によりご希望に添えない場合がございます。\n"
+            "「毎日」「無料で」といった規約外のご要望には対応いたしかねますのでご了承ください。"
+        ),
+        "escalated": False
+    },
+    "先生.*変え|講師.*変更|担当.*変え": {
+        "response": (
+            "ご相談いただきありがとうございます。\n"
+            "お子さまのことを思ってのことと存じます。\n\n"
+            "規約第4条に基づき、講師の配置は生徒の学力・性格を考慮して塾側で決定しております。"
+            "保護者の方からの講師の指名・変更のご要望には原則としてお応えしておりません。\n\n"
+            "ただし、お子さまとの相性に著しい問題がある場合は、塾長が状況を確認のうえ対応いたします。\n\n"
+            "この件につきましては、塾長に確認のうえ、改めてご連絡いたします。"
+        ),
+        "escalated": True
+    },
+    "いじ|トラブル|けんか|喧嘩|意地悪": {
+        "response": (
+            "ご心配をおかけしており申し訳ございません。\n"
+            "お子さまの安全は最優先事項です。\n\n"
+            "こちらの件は、塾長が直接状況を確認し対応いたします。\n\n"
+            "塾長に確認のうえ、改めてご連絡いたします。\n"
+            "詳しい状況（いつ頃から、どのようなことがあったか）を教えていただけると、"
+            "より迅速に対応できます。"
+        ),
+        "escalated": True
+    },
+    "値下げ|安く|高い|割引|払いたくない": {
+        "response": (
+            "ご連絡ありがとうございます。\n\n"
+            "授業料につきましては、規約第1条に定められた料金体系にて"
+            "すべての生徒の皆さまに公平にご案内しております。\n\n"
+            "個別の値下げ・割引には対応いたしかねますので、何卒ご理解ください。\n\n"
+            "なお、兄弟姉妹でご通塾の場合は、2人目以降の入塾金が免除となります。\n\n"
+            "ご不明な点がございましたら、お気軽にお問い合わせください。"
+        ),
+        "escalated": False
+    },
+}
+
+DEMO_DEFAULT = {
+    "response": (
+        "お問い合わせありがとうございます。\n\n"
+        "いただいたご質問の内容を確認いたします。\n"
+        "塾長に確認のうえ、改めてご連絡いたします。\n\n"
+        "お急ぎの場合は、お電話（000-0000-0000）にてお問い合わせください。"
+    ),
+    "escalated": True
+}
+
+
+def get_demo_response(user_message: str) -> dict:
+    """デモモード：キーワードマッチで定型応答を返す"""
+    for pattern, resp in DEMO_RESPONSES.items():
+        if re.search(pattern, user_message):
+            return dict(resp)
+    return dict(DEMO_DEFAULT)
+
+
 # --- 会話履歴の管理（メモリ内、プロトタイプ用） ---
 conversations: dict[str, list[dict]] = {}
 escalation_log: list[dict] = []
@@ -90,6 +218,8 @@ escalation_log: list[dict] = []
 
 def get_ai_response(session_id: str, user_message: str) -> dict:
     """Claude APIを呼び出して回答を取得する"""
+    from anthropic import Anthropic
+
     if session_id not in conversations:
         conversations[session_id] = []
 
@@ -98,7 +228,7 @@ def get_ai_response(session_id: str, user_message: str) -> dict:
         "content": user_message
     })
 
-    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    client = Anthropic()
 
     response = client.messages.create(
         model=MODEL,
@@ -117,12 +247,6 @@ def get_ai_response(session_id: str, user_message: str) -> dict:
     # エスカレーション判定
     needs_escalation = "【要エスカレーション】" in assistant_message
     if needs_escalation:
-        escalation_log.append({
-            "timestamp": datetime.now().isoformat(),
-            "session_id": session_id,
-            "parent_message": user_message,
-            "ai_response": assistant_message
-        })
         # 表示用にタグを除去
         assistant_message = assistant_message.replace("【要エスカレーション】", "").strip()
 
@@ -132,12 +256,31 @@ def get_ai_response(session_id: str, user_message: str) -> dict:
     }
 
 
+def handle_message(session_id: str, user_message: str) -> dict:
+    """メッセージ処理の統合エントリポイント"""
+    if DEMO_MODE:
+        result = get_demo_response(user_message)
+    else:
+        result = get_ai_response(session_id, user_message)
+
+    # エスカレーションログに記録
+    if result["escalated"]:
+        escalation_log.append({
+            "timestamp": datetime.now().isoformat(),
+            "session_id": session_id,
+            "parent_message": user_message,
+            "ai_response": result["response"]
+        })
+
+    return result
+
+
 # --- ルーティング ---
 
 @app.route("/")
 def index():
     """チャット画面"""
-    return render_template("index.html")
+    return render_template("index.html", demo_mode=DEMO_MODE)
 
 
 @app.route("/chat", methods=["POST"])
@@ -150,17 +293,17 @@ def chat():
     if not user_message:
         return jsonify({"error": "メッセージが空です"}), 400
 
-    if not ANTHROPIC_API_KEY:
-        return jsonify({"error": "ANTHROPIC_API_KEY が設定されていません"}), 500
-
-    result = get_ai_response(session_id, user_message)
+    try:
+        result = handle_message(session_id, user_message)
+    except Exception as e:
+        return jsonify({"error": f"エラーが発生しました: {e}"}), 500
     return jsonify(result)
 
 
 @app.route("/escalations")
 def escalations():
     """エスカレーション一覧（塾長用ダッシュボード）"""
-    return render_template("escalations.html", logs=escalation_log)
+    return render_template("escalations.html", logs=escalation_log, demo_mode=DEMO_MODE)
 
 
 @app.route("/api/escalations")
@@ -179,17 +322,10 @@ def reset():
 
 
 if __name__ == "__main__":
-    if not ANTHROPIC_API_KEY:
-        print("=" * 60)
-        print("⚠ ANTHROPIC_API_KEY が未設定です。")
-        print("以下のコマンドで設定してから起動してください：")
-        print()
-        print("  export ANTHROPIC_API_KEY='your-api-key-here'")
-        print("  python app.py")
-        print("=" * 60)
-    else:
-        print("さくら学習塾 保護者対応AIチャットボット 起動中...")
-        print("http://localhost:5000 でアクセスしてください")
-        print("塾長用ダッシュボード: http://localhost:5000/escalations")
-
-    app.run(debug=True, port=5000)
+    print("さくら学習塾 保護者対応AIチャットボット 起動中...")
+    if DEMO_MODE:
+        print("[デモモード] APIキー未設定のため、定型応答で動作します")
+        print("  本番モード: export ANTHROPIC_API_KEY='your-key' を設定して再起動")
+    print(f"チャット画面: http://localhost:5000")
+    print(f"塾長用ダッシュボード: http://localhost:5000/escalations")
+    app.run(debug=False, port=5000)

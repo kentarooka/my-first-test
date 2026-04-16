@@ -261,6 +261,13 @@
         </div>
     </div>
 
+    <!-- デモモードバナー -->
+    {% if demo_mode %}
+    <div style="background:#fff3e0; color:#e65100; text-align:center; padding:8px; font-size:12px; border-bottom:1px solid #ffe0b2;">
+        デモモード（定型応答）｜本番はClaude AIが規約に基づき自動回答します
+    </div>
+    {% endif %}
+
     <!-- チャットエリア -->
     <div class="chat-container" id="chatContainer">
         <!-- 初期メッセージ -->
