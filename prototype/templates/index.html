@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>さくら学習塾 - 保護者サポート</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: linear-gradient(135deg, #f8a4c8, #f06292);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .header-text h1 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-text p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* チャットエリア */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.bot {
+            background: white;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #f8a4c8, #f06292);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.system {
+            background: #fff3e0;
+            color: #e65100;
+            align-self: center;
+            max-width: 90%;
+            text-align: center;
+            font-size: 12px;
+            border-radius: 8px;
+            border: 1px solid #ffe0b2;
+        }
+
+        .message-label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .bot-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            align-self: flex-start;
+            max-width: 80%;
+        }
+
+        .bot-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #f8a4c8, #f06292);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+        }
+
+        .typing-indicator .dots {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background: #ccc;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* 入力エリア */
+        .input-container {
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .input-container textarea {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            max-height: 100px;
+            line-height: 1.4;
+        }
+
+        .input-container textarea:focus {
+            border-color: #f06292;
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #f8a4c8, #f06292);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+        }
+
+        .send-btn:hover {
+            opacity: 0.85;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* クイック返信ボタン */
+        .quick-replies {
+            padding: 8px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-reply-btn {
+            background: white;
+            border: 1px solid #f06292;
+            color: #f06292;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .quick-reply-btn:hover {
+            background: #f06292;
+            color: white;
+        }
+
+        /* エスカレーション通知 */
+        .escalation-notice {
+            background: #fff8e1;
+            border: 1px solid #ffcc02;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #f57f17;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="header-icon">🌸</div>
+        <div class="header-text">
+            <h1>さくら学習塾</h1>
+            <p>保護者サポート（AI対応）</p>
+        </div>
+    </div>
+
+    <!-- チャットエリア -->
+    <div class="chat-container" id="chatContainer">
+        <!-- 初期メッセージ -->
+        <div class="bot-wrapper">
+            <div class="bot-avatar">🌸</div>
+            <div class="message bot">
+                さくら学習塾へのお問い合わせありがとうございます。<br><br>
+                授業の振替、費用のご確認、各種手続きなど、お気軽にご質問ください。<br><br>
+                個別のご相談が必要な場合は、塾長におつなぎいたします。
+            </div>
+        </div>
+    </div>
+
+    <!-- クイック返信 -->
+    <div class="quick-replies" id="quickReplies">
+        <button class="quick-reply-btn" onclick="sendQuick('授業の振替をしたいです')">振替について</button>
+        <button class="quick-reply-btn" onclick="sendQuick('授業料を教えてください')">授業料</button>
+        <button class="quick-reply-btn" onclick="sendQuick('退塾の手続きを教えてください')">退塾手続き</button>
+        <button class="quick-reply-btn" onclick="sendQuick('休塾したいのですが')">休塾したい</button>
+        <button class="quick-reply-btn" onclick="sendQuick('追加の補習をお願いしたいです')">追加補習</button>
+    </div>
+
+    <!-- タイピングインジケーター -->
+    <div class="typing-indicator" id="typingIndicator">
+        <div class="bot-wrapper" style="padding: 0 16px;">
+            <div class="bot-avatar">🌸</div>
+            <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 入力エリア -->
+    <div class="input-container">
+        <textarea id="messageInput"
+                  placeholder="ご質問を入力してください..."
+                  rows="1"
+                  onkeydown="handleKeyDown(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">&#x27A4;</button>
+    </div>
+
+    <script>
+        const sessionId = "session_" + Date.now();
+        const chatContainer = document.getElementById("chatContainer");
+        const messageInput = document.getElementById("messageInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const typingIndicator = document.getElementById("typingIndicator");
+        const quickReplies = document.getElementById("quickReplies");
+
+        // テキストエリアの自動リサイズ
+        messageInput.addEventListener("input", function () {
+            this.style.height = "auto";
+            this.style.height = Math.min(this.scrollHeight, 100) + "px";
+        });
+
+        function handleKeyDown(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendQuick(text) {
+            messageInput.value = text;
+            sendMessage();
+        }
+
+        function addMessage(text, type, escalated) {
+            if (type === "bot") {
+                const wrapper = document.createElement("div");
+                wrapper.className = "bot-wrapper";
+
+                const avatar = document.createElement("div");
+                avatar.className = "bot-avatar";
+                avatar.textContent = "🌸";
+
+                const msg = document.createElement("div");
+                msg.className = "message bot";
+                msg.innerHTML = text.replace(/\n/g, "<br>");
+
+                wrapper.appendChild(avatar);
+                wrapper.appendChild(msg);
+                chatContainer.appendChild(wrapper);
+
+                // エスカレーション通知
+                if (escalated) {
+                    const notice = document.createElement("div");
+                    notice.className = "escalation-notice";
+                    notice.innerHTML = "&#x1F514; この件は塾長に引き継ぎました。改めてご連絡いたします。";
+                    chatContainer.appendChild(notice);
+                }
+            } else {
+                const msg = document.createElement("div");
+                msg.className = "message user";
+                msg.innerHTML = text.replace(/\n/g, "<br>");
+                chatContainer.appendChild(msg);
+            }
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            // UI更新
+            addMessage(text, "user");
+            messageInput.value = "";
+            messageInput.style.height = "auto";
+            sendBtn.disabled = true;
+            typingIndicator.style.display = "block";
+            quickReplies.style.display = "none";
+
+            try {
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: text,
+                        session_id: sessionId
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    addMessage("エラーが発生しました: " + data.error, "bot", false);
+                } else {
+                    addMessage(data.response, "bot", data.escalated);
+                }
+            } catch (err) {
+                addMessage("通信エラーが発生しました。しばらくしてからお試しください。", "bot", false);
+            }
+
+            typingIndicator.style.display = "none";
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+    </script>
+</body>
+</html>

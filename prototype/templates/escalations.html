@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塾長ダッシュボード - エスカレーション一覧</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 24px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            flex: 1;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #e74c3c;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .escalation-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #e74c3c;
+        }
+
+        .escalation-card .timestamp {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .escalation-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .escalation-card .label.parent {
+            color: #e74c3c;
+        }
+
+        .escalation-card .label.ai {
+            color: #3498db;
+        }
+
+        .escalation-card .content {
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 8px 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .refresh-btn {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .refresh-btn:hover {
+            background: #34495e;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .toolbar h2 {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>塾長ダッシュボード</h1>
+        <p>AIが対応しきれない問い合わせの一覧です。確認して対応してください。</p>
+    </div>
+
+    <div class="container">
+        <!-- 統計 -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number">{{ logs|length }}</div>
+                <div class="label">要対応件数</div>
+            </div>
+        </div>
+
+        <!-- ツールバー -->
+        <div class="toolbar">
+            <h2>エスカレーション一覧</h2>
+            <button class="refresh-btn" onclick="location.reload()">更新</button>
+        </div>
+
+        <!-- エスカレーション一覧 -->
+        {% if logs %}
+            {% for log in logs|reverse %}
+            <div class="escalation-card">
+                <div class="timestamp">{{ log.timestamp }}</div>
+                <div class="label parent">保護者の問い合わせ</div>
+                <div class="content">{{ log.parent_message }}</div>
+                <div class="label ai">AIの回答</div>
+                <div class="content">{{ log.ai_response | replace("【要エスカレーション】", "") }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="icon">&#x2705;</div>
+                <p>現在、対応が必要な問い合わせはありません。</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
